@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 
 namespace DbSelect
@@ -7,28 +8,41 @@ namespace DbSelect
     {
         static void Main(string[] args)
         {
-           GetAllProduct();
+            var products = GetAllProduct();
+
+            foreach (var product in products)
+            {
+                if (product.ProductPrice > 10)
+                    System.Console.WriteLine($"Id : {product.ProductId} Name : {product.ProductName} Price : {product.ProductPrice}");
+            }
         }
 
-         static void GetAllProduct()
+        static List<Product> GetAllProduct()
         {
-             using (var connection = GetSqlConnection())
+            List<Product> products = null;
+            using (var connection = GetSqlConnection())
             {
                 try
                 {
-                   connection.Open();
-                   System.Console.WriteLine("Bağlantı sağlandı"); 
-                   string sql="select * from Urunler";
-                   SqlCommand command =new SqlCommand(sql,connection);
+                    connection.Open();
+                    string sql = "select * from Urunler";
+                    SqlCommand command = new SqlCommand(sql, connection);
 
-                   var reader=command.ExecuteReader();
-                   while (reader.Read())
-                   {
-                       System.Console.WriteLine($"Ürün Adı : {reader[1]} | Fiyat : {reader[5]}");
-                   }
-                   reader.Close();
+                    var reader = command.ExecuteReader();
+
+                    products = new List<Product>();
+                    while (reader.Read())
+                    {
+                        products.Add(new Product
+                        {
+                            ProductId = (int)reader["UrunID"],
+                            ProductName = reader["UrunAdi"].ToString(),
+                            ProductPrice = (decimal)reader["BirimFiyati"]
+                        });
+                    }
+                    reader.Close();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     System.Console.WriteLine(ex.Message);
                 }
@@ -37,13 +51,14 @@ namespace DbSelect
                     connection.Close();
                 }
             }
+            return products;
         }
 
-          static SqlConnection GetSqlConnection()
+        static SqlConnection GetSqlConnection()
         {
             string connectionString = @"Data Source=.\SQLEXPRESS;Initial Catalog=Northwind;Integrated Security=SSPI;";
 
-           return new SqlConnection(connectionString);
+            return new SqlConnection(connectionString);
         }
     }
 }
